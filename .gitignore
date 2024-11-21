@@ -1,6 +1,9 @@
 # Ignore lastupdate
 lastupdate.tmp
 
+# Ignore app
+simple-api-beego
+
 # Upload file
 static/uploads
 
