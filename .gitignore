@@ -1,0 +1,14 @@
+# Ignore lastupdate
+lastupdate.tmp
+
+# Upload file
+static/uploads
+
+# sessions
+sessions
+
+vendor/
+
+go.mod
+go.sum
+simple-api-beego.exe
