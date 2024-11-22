@@ -18,7 +18,7 @@ type UserController struct {
 func (c *UserController) GetAll() {
 	o := orm.NewOrm()
 	var users []models.User
-	_, err := o.QueryTable(new(models.User)).All(&users)
+	_, err := o.QueryTable(new(models.User)).Filter("DeletedAt__isnull", true).All(&users)
 	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Data["json"] = map[string]string{"error": err.Error()}
