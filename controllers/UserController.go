@@ -64,6 +64,50 @@ func (c *UserController) Create() {
 	c.ServeJSON()
 }
 
+func (c *UserController) Update() {
+	// Ambil ID dari parameter URL
+	id, errId := c.GetInt(":id")
+	if errId != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
+		c.ServeJSON()
+		return
+	}
+
+	var user models.User
+	err := json.Unmarshal(c.Ctx.Input.RequestBody, &user)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
+		c.ServeJSON()
+		return
+	}
+
+	// Gunakan ORM untuk update data
+	o := orm.NewOrm()
+	newUserData := models.User{Id: id}
+
+	// Cek apakah user ada
+	if err := o.Read(&newUserData); err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "User not found"}
+		c.ServeJSON()
+		return
+	}
+
+	newUserData.Name = user.Name
+	newUserData.Email = user.Email
+
+	if _, err := o.Update(&newUserData); err != nil {
+		c.CustomAbort(http.StatusInternalServerError, "Failed to update user")
+		return
+	}
+
+	// Response sukses
+	c.Data["json"] = newUserData
+	c.ServeJSON()
+}
+
 // Fungsi validasi data user
 func validateUser(user models.User) map[string]string {
 	errors := make(map[string]string)
