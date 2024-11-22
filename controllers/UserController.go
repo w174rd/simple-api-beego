@@ -29,6 +29,43 @@ func (c *UserController) GetAll() {
 	c.ServeJSON()
 }
 
+// Fungsi untuk mendapatkan user berdasarkan ID
+func (c *UserController) GetUserByID() {
+	// Ambil ID dari parameter URL
+	id, err := c.GetInt(":id")
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
+		c.ServeJSON()
+		return
+	}
+
+	// ORM instance
+	o := orm.NewOrm()
+	user := models.User{Id: id}
+
+	// Ambil data user berdasarkan ID
+	err = o.QueryTable(new(models.User)).Filter("id", id).Filter("DeletedAt__isnull", true).One(&user)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			// Tidak ditemukan user dengan ID tersebut
+			c.Ctx.Output.SetStatus(http.StatusBadRequest)
+			c.Data["json"] = map[string]string{"error": "User not found"}
+			c.ServeJSON()
+		} else {
+			// Terjadi kesalahan lain
+			c.Ctx.Output.SetStatus(http.StatusBadRequest)
+			c.Data["json"] = map[string]string{"error": "Failed to retrieve user"}
+			c.ServeJSON()
+		}
+		return
+	}
+
+	// Response user dalam format JSON
+	c.Data["json"] = user
+	c.ServeJSON()
+}
+
 // Create a new user
 func (c *UserController) Create() {
 	var user models.User
