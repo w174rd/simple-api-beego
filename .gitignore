@@ -14,4 +14,5 @@ vendor/
 
 go.mod
 go.sum
+debug.log
 simple-api-beego.exe
