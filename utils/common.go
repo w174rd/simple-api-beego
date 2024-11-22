@@ -16,7 +16,7 @@ func validator(data interface{}, requiredParams []string) map[string]string {
 		val = append(val, v.Id)
 		val = append(val, v.Name)
 		val = append(val, v.Email)
-		val = append(val, v.IsDeleted)
+		val = append(val, v.DeletedAt)
 		val = append(val, v.CreatedAt)
 		val = append(val, v.UpdateAt)
 	default:
