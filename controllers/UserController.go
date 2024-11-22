@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"simple-api-beego/models"
+	"time"
 
 	"github.com/beego/beego/orm"
 	"github.com/beego/beego/v2/server/web"
@@ -99,12 +100,55 @@ func (c *UserController) Update() {
 	newUserData.Email = user.Email
 
 	if _, err := o.Update(&newUserData); err != nil {
-		c.CustomAbort(http.StatusInternalServerError, "Failed to update user")
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Failed to update user"}
+		c.ServeJSON()
 		return
 	}
 
 	// Response sukses
 	c.Data["json"] = newUserData
+	c.ServeJSON()
+}
+
+// Fungsi untuk menghapus user
+func (c *UserController) Delete() {
+	// Ambil ID dari parameter URL
+	id, err := c.GetInt(":id")
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
+		c.ServeJSON()
+		return
+	}
+
+	// ORM instance
+	o := orm.NewOrm()
+	user := models.User{Id: id}
+
+	// Periksa apakah user ada
+	if err := o.Read(&user); err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "User not found"}
+		c.ServeJSON()
+		return
+	}
+
+	// Set DeletedAt dengan waktu saat ini
+	now := time.Now()
+	user.DeletedAt = &now
+
+	// Update user dengan DeletedAt yang telah diubah
+	if _, err := o.Update(&user, "DeletedAt"); err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Failed to soft delete user"}
+		c.ServeJSON()
+		// c.CustomAbort(http.StatusInternalServerError, "Failed to soft delete user")
+		return
+	}
+
+	// Response sukses
+	c.Data["json"] = map[string]string{"message": "User deleted successfully"}
 	c.ServeJSON()
 }
 
