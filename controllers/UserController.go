@@ -24,7 +24,11 @@ func (c *UserController) GetAll() {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Data["json"] = map[string]string{"error": err.Error()}
 	} else {
-		c.Data["json"] = users
+		var newUsers []models.User
+		for _, user := range users {
+			newUsers = append(newUsers, models.UserDefault(user))
+		}
+		c.Data["json"] = newUsers
 	}
 	c.ServeJSON()
 }
@@ -62,7 +66,7 @@ func (c *UserController) GetUserByID() {
 	}
 
 	// Response user dalam format JSON
-	c.Data["json"] = user
+	c.Data["json"] = models.UserDefault(user)
 	c.ServeJSON()
 }
 
@@ -80,7 +84,7 @@ func (c *UserController) Create() {
 	}
 
 	// Validasi data user
-	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email"}); err != nil {
+	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email", "Password"}); err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": err.Error()}
 		c.ServeJSON()
@@ -94,7 +98,7 @@ func (c *UserController) Create() {
 		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
 		c.Data["json"] = map[string]string{"error": err.Error()}
 	} else {
-		c.Data["json"] = user
+		c.Data["json"] = models.UserComplete(user)
 	}
 	c.ServeJSON()
 }
@@ -148,7 +152,7 @@ func (c *UserController) Update() {
 	}
 
 	// Response sukses
-	c.Data["json"] = newUserData
+	c.Data["json"] = models.UserDefault(newUserData)
 	c.ServeJSON()
 }
 
