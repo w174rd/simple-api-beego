@@ -16,3 +16,4 @@ go.mod
 go.sum
 debug.log
 simple-api-beego.exe
+simple-api-beego.exe~
