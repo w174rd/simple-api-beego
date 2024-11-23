@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"simple-api-beego/models"
 	"simple-api-beego/utils"
@@ -44,12 +45,8 @@ func (c *UserController) GetUserByID() {
 		return
 	}
 
-	// ORM instance
-	o := orm.NewOrm()
-	user := models.User{Id: id}
-
 	// Ambil data user berdasarkan ID
-	err = o.QueryTable(new(models.User)).Filter("id", id).Filter("DeletedAt__isnull", true).One(&user)
+	user, err := GetUserByID(id)
 	if err != nil {
 		if err == orm.ErrNoRows {
 			// Tidak ditemukan user dengan ID tersebut
@@ -66,7 +63,7 @@ func (c *UserController) GetUserByID() {
 	}
 
 	// Response user dalam format JSON
-	c.Data["json"] = models.UserDefault(user)
+	c.Data["json"] = models.UserDefault(*user)
 	c.ServeJSON()
 }
 
@@ -87,6 +84,14 @@ func (c *UserController) Create() {
 	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email", "Password"}); err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": err.Error()}
+		c.ServeJSON()
+		return
+	}
+
+	// Check existing user
+	if _, err := GetUserByEmail(user.Email); err == nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "email has been registered"}
 		c.ServeJSON()
 		return
 	}
@@ -134,12 +139,20 @@ func (c *UserController) Update() {
 	newUserData := models.User{Id: id}
 
 	// Cek apakah user ada
-	if err := o.Read(&newUserData); err != nil {
+	if _, err := GetUserByID(id); err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "User not found"}
 		c.ServeJSON()
 		return
 	}
+
+	// membaca data user
+	// if err := o.Read(&newUserData); err != nil {
+	// 	c.Ctx.Output.SetStatus(http.StatusBadRequest)
+	// 	c.Data["json"] = map[string]string{"error": "User not found"}
+	// 	c.ServeJSON()
+	// 	return
+	// }
 
 	newUserData.Name = user.Name
 	newUserData.Email = user.Email
@@ -195,4 +208,36 @@ func (c *UserController) Delete() {
 	// Response sukses
 	c.Data["json"] = map[string]string{"message": "User deleted successfully"}
 	c.ServeJSON()
+}
+
+func GetUserByID(id int) (*models.User, error) {
+	// ORM instance
+	o := orm.NewOrm()
+	var user models.User
+	err := o.QueryTable(new(models.User)).Filter("Id", id).Filter("DeletedAt__isnull", true).One(&user)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			return nil, errors.New("user not found")
+		} else {
+			return nil, errors.New("failed to retrieve user")
+		}
+	}
+
+	return &user, nil
+}
+
+func GetUserByEmail(email string) (*models.User, error) {
+	// ORM instance
+	o := orm.NewOrm()
+	var user models.User
+	err := o.QueryTable(new(models.User)).Filter("Email", email).Filter("DeletedAt__isnull", true).One(&user)
+	if err != nil {
+		if err == orm.ErrNoRows {
+			return nil, errors.New("user not found")
+		} else {
+			return nil, errors.New("failed to retrieve user")
+		}
+	}
+
+	return &user, nil
 }
