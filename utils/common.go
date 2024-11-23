@@ -1,57 +1,25 @@
 package utils
 
 import (
-	"log"
+	"errors"
+	"reflect"
 	"regexp"
-	"simple-api-beego/models"
+	"strings"
 )
 
-func validator(data interface{}, requiredParams []string) map[string]string {
-	errors := make(map[string]string)
+// fungsi validasi
+func ValidateRequiredFields(model interface{}, requiredFields []string) error {
+	v := reflect.ValueOf(model).Elem()
 
-	var val []interface{}
-
-	switch v := data.(type) {
-	case models.User:
-		val = append(val, v.Id)
-		val = append(val, v.Name)
-		val = append(val, v.Email)
-		val = append(val, v.DeletedAt)
-		val = append(val, v.CreatedAt)
-		val = append(val, v.UpdateAt)
-	default:
-		errors["error"] = "Unsupported type"
+	for _, field := range requiredFields {
+		fieldValue := v.FieldByName(field)
+		if !fieldValue.IsValid() || fieldValue.IsZero() {
+			return errors.New(field + " is required")
+		} else if strings.EqualFold("email", field) && !isValidEmail(fieldValue.Interface().(string)) {
+			return errors.New("invalid email format")
+		}
 	}
-
-	// Loop melalui requiredParams dan periksa apakah ada yang kosong
-	for _, param := range requiredParams {
-		log.Println(param)
-		// value, exists := val[param]
-		// if !exists || strings.TrimSpace(value) == "" {
-		// 	errors[param] = fmt.Sprintf("%s is required", param)
-		// }
-	}
-
-	return errors
-
-	// errors := make(map[string]string)
-
-	// // Lakukan validasi manual berdasarkan jenis data
-	// switch v := data.(type) {
-	// case models.User:
-	// 	if v.Name == "" {
-	// 		errors["name"] = "Name is required"
-	// 	}
-	// 	if v.Email == "" {
-	// 		errors["email"] = "Email is required"
-	// 	} else if !isValidEmail(v.Email) {
-	// 		errors["email"] = "Invalid email format"
-	// 	}
-	// default:
-	// 	errors["error"] = "Unsupported type"
-	// }
-
-	// return errors
+	return nil
 }
 
 // Helper untuk validasi email

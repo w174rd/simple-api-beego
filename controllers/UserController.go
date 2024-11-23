@@ -3,8 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
-	"regexp"
 	"simple-api-beego/models"
+	"simple-api-beego/utils"
 	"time"
 
 	"github.com/beego/beego/orm"
@@ -80,12 +80,9 @@ func (c *UserController) Create() {
 	}
 
 	// Validasi data user
-	if validationErrors := validateUser(user); len(validationErrors) > 0 {
+	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email"}); err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]interface{}{
-			"error":   "Validation failed",
-			"details": validationErrors,
-		}
+		c.Data["json"] = map[string]string{"error": err.Error()}
 		c.ServeJSON()
 		return
 	}
@@ -117,6 +114,13 @@ func (c *UserController) Update() {
 	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
+		c.ServeJSON()
+		return
+	}
+
+	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email"}); err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": err.Error()}
 		c.ServeJSON()
 		return
 	}
@@ -187,30 +191,4 @@ func (c *UserController) Delete() {
 	// Response sukses
 	c.Data["json"] = map[string]string{"message": "User deleted successfully"}
 	c.ServeJSON()
-}
-
-// Fungsi validasi data user
-func validateUser(user models.User) map[string]string {
-	errors := make(map[string]string)
-
-	// Validasi nama
-	if user.Name == "" {
-		errors["name"] = "Name is required"
-	}
-
-	// Validasi email
-	if user.Email == "" {
-		errors["email"] = "Email is required"
-	} else if !isValidEmail(user.Email) {
-		errors["email"] = "Invalid email format"
-	}
-
-	return errors
-}
-
-// Helper untuk validasi email
-func isValidEmail(email string) bool {
-	// Regex sederhana untuk validasi email
-	re := `^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`
-	return regexp.MustCompile(re).MatchString(email)
 }
