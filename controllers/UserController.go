@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"simple-api-beego/helpers"
 	"simple-api-beego/models"
-	"simple-api-beego/utils"
 	"time"
 
 	"github.com/beego/beego/orm"
@@ -23,16 +23,14 @@ func (c *UserController) GetAll() {
 	var users []models.User
 	_, err := o.QueryTable(new(models.User)).Filter("DeletedAt__isnull", true).All(&users)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
-		c.Data["json"] = map[string]string{"error": err.Error()}
+		helpers.Response(c.Ctx, http.StatusInternalServerError, err.Error(), nil)
 	} else {
 		var newUsers []models.User
 		for _, user := range users {
 			newUsers = append(newUsers, models.UserDefault(user))
 		}
-		c.Data["json"] = newUsers
+		helpers.Response(c.Ctx, 200, "success", newUsers)
 	}
-	c.ServeJSON()
 }
 
 // Fungsi untuk mendapatkan user berdasarkan ID
@@ -40,32 +38,19 @@ func (c *UserController) GetUserByID() {
 	// Ambil ID dari parameter URL
 	id, err := c.GetInt(":id")
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid user ID", nil)
 		return
 	}
 
 	// Ambil data user berdasarkan ID
 	user, err := GetUserByID(id)
 	if err != nil {
-		if err == orm.ErrNoRows {
-			// Tidak ditemukan user dengan ID tersebut
-			c.Ctx.Output.SetStatus(http.StatusBadRequest)
-			c.Data["json"] = map[string]string{"error": "User not found"}
-			c.ServeJSON()
-		} else {
-			// Terjadi kesalahan lain
-			c.Ctx.Output.SetStatus(http.StatusBadRequest)
-			c.Data["json"] = map[string]string{"error": "Failed to retrieve user"}
-			c.ServeJSON()
-		}
+		helpers.Response(c.Ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// Response user dalam format JSON
-	c.Data["json"] = models.UserDefault(*user)
-	c.ServeJSON()
+	helpers.Response(c.Ctx, 200, "success", models.UserDefault(*user))
 }
 
 // Create a new user
@@ -75,34 +60,26 @@ func (c *UserController) Create() {
 	// Parse JSON dari request body
 	err := json.Unmarshal(c.Ctx.Input.RequestBody, &user)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid JSON format", nil)
 		return
 	}
 
 	// Validasi data user
-	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email", "Password"}); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": err.Error()}
-		c.ServeJSON()
+	if err := helpers.ValidateRequiredFields(&user, []string{"Name", "Email", "Password"}); err != nil {
+		helpers.Response(c.Ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// Check existing user
 	if _, err := GetUserByEmail(user.Email); err == nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "email has been registered"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "email has been registered", nil)
 		return
 	}
 
 	// Enkripsi password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Failed to hash password"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Failed to hash password", nil)
 		return
 	}
 
@@ -112,46 +89,36 @@ func (c *UserController) Create() {
 	o := orm.NewOrm()
 	_, err = o.Insert(&user)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError)
-		c.Data["json"] = map[string]string{"error": err.Error()}
+		helpers.Response(c.Ctx, http.StatusInternalServerError, err.Error(), nil)
 	} else {
-		c.Data["json"] = models.UserComplete(user)
+		helpers.Response(c.Ctx, 200, "success", models.UserComplete(user))
 	}
-	c.ServeJSON()
 }
 
 func (c *UserController) Update() {
 	// Ambil ID dari parameter URL
 	id, errId := c.GetInt(":id")
 	if errId != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid user ID", nil)
 		return
 	}
 
 	var user models.User
 	err := json.Unmarshal(c.Ctx.Input.RequestBody, &user)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid JSON format", nil)
 		return
 	}
 
-	if err := utils.ValidateRequiredFields(&user, []string{"Name", "Email"}); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": err.Error()}
-		c.ServeJSON()
+	if err := helpers.ValidateRequiredFields(&user, []string{"Name", "Email"}); err != nil {
+		helpers.Response(c.Ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
 	// Cek apakah user ada
 	newUserData, err := GetUserByID(id)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "User not found"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
@@ -162,15 +129,12 @@ func (c *UserController) Update() {
 
 	o := orm.NewOrm()
 	if _, err := o.Update(&user); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Failed to update user"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Failed to update user", nil)
 		return
 	}
 
 	// Response sukses
-	c.Data["json"] = models.UserDefault(user)
-	c.ServeJSON()
+	helpers.Response(c.Ctx, 200, "success", models.UserDefault(user))
 }
 
 // Fungsi untuk menghapus user
@@ -178,9 +142,7 @@ func (c *UserController) Delete() {
 	// Ambil ID dari parameter URL
 	id, err := c.GetInt(":id")
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid user ID"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid user ID", nil)
 		return
 	}
 
@@ -190,9 +152,7 @@ func (c *UserController) Delete() {
 
 	// Periksa apakah user ada
 	if err := o.Read(&user); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "User not found"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "User not found", nil)
 		return
 	}
 
@@ -202,16 +162,12 @@ func (c *UserController) Delete() {
 
 	// Update user dengan DeletedAt yang telah diubah
 	if _, err := o.Update(&user, "DeletedAt"); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Failed to soft delete user"}
-		c.ServeJSON()
-		// c.CustomAbort(http.StatusInternalServerError, "Failed to soft delete user")
+		helpers.Response(c.Ctx, http.StatusInternalServerError, "Failed to delete user", nil)
 		return
 	}
 
 	// Response sukses
-	c.Data["json"] = map[string]string{"message": "User deleted successfully"}
-	c.ServeJSON()
+	helpers.Response(c.Ctx, 200, "User deleted successfully", nil)
 }
 
 func GetUserByID(id int) (*models.User, error) {

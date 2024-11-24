@@ -3,8 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"net/http"
+	"simple-api-beego/helpers"
 	"simple-api-beego/models"
-	"simple-api-beego/utils"
 
 	"github.com/beego/beego/v2/server/web"
 	"golang.org/x/crypto/bcrypt"
@@ -17,37 +17,29 @@ type AuthController struct {
 func (c *AuthController) Login() {
 	var req models.User
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &req); err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid JSON format"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid JSON format", nil)
 		return
 	}
 
 	user, err := GetUserByEmail(req.Email)
 	// Verifikasi password
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid Email or password"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid Email or password", nil)
 		return
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid Email or password"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Invalid Email or password", nil)
 		return
 	}
 
-	token, err := utils.GenerateToken(user.Id, user.Email)
+	token, err := helpers.GenerateToken(user.Id, user.Email)
 	if err != nil {
-		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Failed to generate token"}
-		c.ServeJSON()
+		helpers.Response(c.Ctx, http.StatusBadRequest, "Failed to generate token", nil)
 		return
 	}
 
-	c.Data["json"] = map[string]string{"token": token}
-	c.ServeJSON()
+	user.Token = token
+	helpers.Response(c.Ctx, 200, "success", models.UserLogin(*user))
 }

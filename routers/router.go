@@ -2,8 +2,8 @@ package routers
 
 import (
 	"simple-api-beego/controllers"
+	"simple-api-beego/helpers"
 	"simple-api-beego/middlewares"
-	"simple-api-beego/utils"
 
 	"github.com/beego/beego/v2/server/web"
 )
@@ -12,7 +12,7 @@ func init() {
 	// beego.Router("/", &controllers.MainController{})
 	// beego.Router("/api/v1/", &controllers.MainController{})
 
-	web.InsertFilter("/api/v1", web.BeforeRouter, utils.ForbiddenHandler)
+	web.InsertFilter("/api/v1", web.BeforeRouter, helpers.ForbiddenHandler)
 
 	auth := web.NewNamespace("/api/v1/auth",
 		web.NSRouter("/login", &controllers.AuthController{}, "post:Login"),

@@ -26,6 +26,15 @@ func UserDefault(user User) User {
 	}
 }
 
+func UserLogin(user User) User {
+	return User{
+		Id:    user.Id,
+		Name:  user.Name,
+		Email: user.Email,
+		Token: user.Token,
+	}
+}
+
 func UserComplete(user User) User {
 	return User{
 		Id:        user.Id,

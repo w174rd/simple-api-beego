@@ -1,4 +1,4 @@
-package utils
+package helpers
 
 import (
 	"errors"
@@ -35,4 +35,16 @@ func isValidEmail(email string) bool {
 func ForbiddenHandler(ctx *context.Context) {
 	ctx.Output.SetStatus(http.StatusForbidden) // Status 403 Forbidden
 	ctx.Output.Body([]byte("403 Forbidden"))
+}
+
+func HandlePanic(ctx *context.Context) {
+	if r := recover(); r != nil {
+		// Jika ada panic, buat response JSON untuk error
+		ctx.Output.SetStatus(500)
+		ctx.Output.JSON(map[string]interface{}{
+			"status":  "error",
+			"message": "Internal Server Error",
+			"error":   r,
+		}, false, false)
+	}
 }
