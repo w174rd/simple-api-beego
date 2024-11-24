@@ -2,16 +2,28 @@ package routers
 
 import (
 	"simple-api-beego/controllers"
+	"simple-api-beego/middlewares"
+	"simple-api-beego/utils"
 
-	beego "github.com/beego/beego/v2/server/web"
+	"github.com/beego/beego/v2/server/web"
 )
 
 func init() {
-	beego.Router("/", &controllers.MainController{})
+	// beego.Router("/", &controllers.MainController{})
 	// beego.Router("/api/v1/", &controllers.MainController{})
-	beego.Router("/api/v1/users", &controllers.UserController{}, "get:GetAll")
-	beego.Router("/api/v1/users", &controllers.UserController{}, "post:Create")
-	beego.Router("/api/v1/users/:id", &controllers.UserController{}, "get:GetUserByID")
-	beego.Router("/api/v1/users/:id", &controllers.UserController{}, "put:Update")
-	beego.Router("/api/v1/users/:id", &controllers.UserController{}, "delete:Delete")
+
+	web.InsertFilter("/api/v1", web.BeforeRouter, utils.ForbiddenHandler)
+
+	auth := web.NewNamespace("/api/v1/auth",
+		web.NSRouter("/login", &controllers.AuthController{}, "post:Login"),
+		web.NSRouter("/register", &controllers.UserController{}, "post:Create"),
+	)
+
+	users := web.NewNamespace("/api/v1/users",
+		web.NSBefore(middlewares.JWTMiddleware),
+		web.NSRouter("", &controllers.UserController{}, "get:GetAll"),
+		web.NSRouter("/:id", &controllers.UserController{}, "get:GetUserByID;put:Update;delete:Delete"),
+	)
+
+	web.AddNamespace(auth, users)
 }

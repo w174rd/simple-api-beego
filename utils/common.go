@@ -2,9 +2,12 @@ package utils
 
 import (
 	"errors"
+	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/beego/beego/v2/server/web/context"
 )
 
 // fungsi validasi
@@ -27,4 +30,9 @@ func isValidEmail(email string) bool {
 	// Regex sederhana untuk validasi email
 	re := `^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$`
 	return regexp.MustCompile(re).MatchString(email)
+}
+
+func ForbiddenHandler(ctx *context.Context) {
+	ctx.Output.SetStatus(http.StatusForbidden) // Status 403 Forbidden
+	ctx.Output.Body([]byte("403 Forbidden"))
 }

@@ -134,30 +134,22 @@ func (c *UserController) Update() {
 		return
 	}
 
-	// Gunakan ORM untuk update data
-	o := orm.NewOrm()
-	newUserData := models.User{Id: id}
-
 	// Cek apakah user ada
-	if _, err := GetUserByID(id); err != nil {
+	newUserData, err := GetUserByID(id)
+	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "User not found"}
 		c.ServeJSON()
 		return
 	}
 
-	// membaca data user
-	// if err := o.Read(&newUserData); err != nil {
-	// 	c.Ctx.Output.SetStatus(http.StatusBadRequest)
-	// 	c.Data["json"] = map[string]string{"error": "User not found"}
-	// 	c.ServeJSON()
-	// 	return
-	// }
-
 	newUserData.Name = user.Name
 	newUserData.Email = user.Email
 
-	if _, err := o.Update(&newUserData); err != nil {
+	user = *newUserData
+
+	o := orm.NewOrm()
+	if _, err := o.Update(&user); err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
 		c.Data["json"] = map[string]string{"error": "Failed to update user"}
 		c.ServeJSON()
@@ -165,7 +157,7 @@ func (c *UserController) Update() {
 	}
 
 	// Response sukses
-	c.Data["json"] = models.UserDefault(newUserData)
+	c.Data["json"] = models.UserDefault(user)
 	c.ServeJSON()
 }
 
