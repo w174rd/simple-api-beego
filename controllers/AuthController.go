@@ -7,6 +7,7 @@ import (
 	"simple-api-beego/utils"
 
 	"github.com/beego/beego/v2/server/web"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthController struct {
@@ -23,10 +24,18 @@ func (c *AuthController) Login() {
 	}
 
 	user, err := GetUserByEmail(req.Email)
-	if err != nil || user.Password != req.Password {
-		// Ganti dengan pengecekan hash password jika menggunakan bcrypt
+	// Verifikasi password
+	if err != nil {
 		c.Ctx.Output.SetStatus(http.StatusBadRequest)
-		c.Data["json"] = map[string]string{"error": "Invalid username or password"}
+		c.Data["json"] = map[string]string{"error": "Invalid Email or password"}
+		c.ServeJSON()
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password))
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Invalid Email or password"}
 		c.ServeJSON()
 		return
 	}

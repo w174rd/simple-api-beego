@@ -10,6 +10,7 @@ import (
 
 	"github.com/beego/beego/orm"
 	"github.com/beego/beego/v2/server/web"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserController struct {
@@ -95,6 +96,17 @@ func (c *UserController) Create() {
 		c.ServeJSON()
 		return
 	}
+
+	// Enkripsi password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.Ctx.Output.SetStatus(http.StatusBadRequest)
+		c.Data["json"] = map[string]string{"error": "Failed to hash password"}
+		c.ServeJSON()
+		return
+	}
+
+	user.Password = string(hashedPassword)
 
 	// Insert ke database
 	o := orm.NewOrm()
