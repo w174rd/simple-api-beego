@@ -9,6 +9,14 @@ import (
 )
 
 func JWTMiddleware(ctx *context.Context) {
+
+	defer func() {
+		if r := recover(); r != nil {
+			helpers.Response(ctx, http.StatusInternalServerError, "Internal server error: check the token", nil)
+			return
+		}
+	}()
+
 	token := ctx.Input.Header("Authorization")
 
 	if token == "" {
