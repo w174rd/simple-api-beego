@@ -13,6 +13,7 @@ func init() {
 	// beego.Router("/api/v1/", &controllers.MainController{})
 
 	web.InsertFilter("/api/v1", web.BeforeRouter, helpers.ForbiddenHandler)
+	web.InsertFilter("*", web.BeforeRouter, helpers.CORS)
 
 	auth := web.NewNamespace("/api/v1/auth",
 		web.NSRouter("/login", &controllers.AuthController{}, "post:Login"),
