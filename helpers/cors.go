@@ -10,7 +10,7 @@ import (
 func CORS(ctx *context.Context) {
 	ctx.Output.Header("Access-Control-Allow-Origin", "*") // Izinkan semua asal
 	ctx.Output.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-	ctx.Output.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
+	ctx.Output.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization, x-api-key")
 
 	// Tangani permintaan OPTIONS
 	if ctx.Input.Method() == http.MethodOptions {
